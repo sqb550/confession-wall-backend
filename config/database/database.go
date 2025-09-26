@@ -1,7 +1,7 @@
 package database
 
 import (
-	"CONFESSION-WALL-BACKEND/config/config"
+	"confession-wall-backend/config/config"
 	"fmt"
 	"log"
 
@@ -22,7 +22,6 @@ func Init() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, pass, host, port, DBname)
 	fmt.Println(dsn)
-	
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 

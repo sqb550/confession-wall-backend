@@ -1,7 +1,7 @@
 package database
 
 import (
-	"CONFESSION-WALL-BACKEND/app/models"
+	"confession-wall-backend/app/models"
 
 	"gorm.io/gorm"
 )

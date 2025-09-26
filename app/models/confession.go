@@ -7,7 +7,7 @@ type Confession struct {
 	UserID    int       `json:"user_id"`
 	Avatar    string    `json:"avatar"`
 	Content   string    `json:"content"`
-	Picture   string    `json:"picture"`
+	Picture   []string    `json:"picture"` 
 	Likes     int       `json:"likes"`
 	Name      string    `json:"name"`
 	Views     int       `json:"views"`
