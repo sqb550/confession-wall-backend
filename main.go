@@ -1,12 +1,14 @@
 package main
 
 import (
+	"confession-wall-backend/app/utils"
 	"confession-wall-backend/config/database"
 	"confession-wall-backend/config/router"
 	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -18,6 +20,11 @@ func main() {
 	
 	}
 	r.Static("/uploads","./uploads")
+	
+	c:=cron.New()
+	_,err=c.AddFunc("**/5****",utils.SyncCacheToDB)
+	c.Start()
+	defer c.Stop()
 
 	router.Init(r)
 	err = r.Run(":8080")

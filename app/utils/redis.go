@@ -102,13 +102,17 @@ func SyncCacheToDB() {
 	for _, key := range keys {
 		confession_id := key[len("confession:"):]
 
-		val, err := redisClient.Get(ctx, key).Result()
+		val, err := redisClient.HGetAll(ctx, key).Result()
 		if err != nil {
-			log.Printf("Error getting post data from cache: %v\n", err)
+			log.Printf("Error getting confession data from cache: %v\n", err)
 			return
 		}
-
-		err = database.DB.Model(&models.Confession{}).Where("id =?",confession_id).Update("likes", val).Error
+		likes,_:=strconv.Atoi(val["likes"])
+		views,_:=strconv.Atoi(val["views"])
+		err = database.DB.Model(&models.Confession{}).Where("id =?",confession_id).Updates(map[string]interface{}{
+			"likes":likes,
+			"views":views,
+		}).Error
 		if err != nil {
 			log.Printf("Error updating database: %v\n", err)
 			return
