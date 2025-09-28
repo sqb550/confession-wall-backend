@@ -1,6 +1,7 @@
 package main
 
 import (
+	"confession-wall-backend/app/midwares"
 	"confession-wall-backend/app/utils"
 	"confession-wall-backend/config/database"
 	"confession-wall-backend/config/router"
@@ -14,15 +15,21 @@ import (
 func main() {
 	database.Init()
 	r := gin.Default()
-	err:=os.MkdirAll("./uploads",0755)
-	if err!=nil{
+	err := os.MkdirAll("./uploads", 0755)
+	if err != nil {
 		log.Fatal("Create upload directory error:", err)
-	
+
 	}
-	r.Static("/uploads","./uploads")
-	
-	c:=cron.New()
-	_,err=c.AddFunc("**/5****",utils.SyncCacheToDB)
+	r.Static("/uploads", "./uploads")
+	r.Use(midwares.ErrHandler())
+
+	c := cron.New()
+	_, err1 := c.AddFunc("**/5****", utils.SyncCacheToDB)
+	_, err2 := c.AddFunc("******", utils.ScheduleRelease)
+	if err1 != nil || err2 != nil {
+		log.Fatal("Add tasks error:", err)
+	}
+
 	c.Start()
 	defer c.Stop()
 
