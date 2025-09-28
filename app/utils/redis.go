@@ -1,10 +1,6 @@
 package utils
 
 import (
-	"confession-wall-backend/app/models"
-	"confession-wall-backend/config/database"
-	"context"
-	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -19,63 +15,99 @@ func InitRedis() {
 		Password: "",
 		DB:       0,
 	})
+
 }
-//浏览量自增
-func IncrViewCount(confessionID int,c *gin.Context)error{
-	hashKey:="confession:"+strconv.Itoa(confessionID)
-	_,err:=redisClient.HIncrBy(c,hashKey,"views",1).Result()
+
+// 浏览量自增
+func IncrViewCount(postID int, c *gin.Context) error {
+	hashKey := "post:" + strconv.Itoa(postID)
+	_, err := redisClient.HIncrBy(c, hashKey, "views", 1).Result()
 	return err
 }
-func CheckUserLike(userID int,confessionID int,c *gin.Context)(bool,error){
-	likeUserKey:="confession:users"+strconv.Itoa(confessionID)
-	isLiked,err:=redisClient.SIsMember(c,likeUserKey,userID).Result()
-	return isLiked,err
+func CheckUserLike(userID int, postID int, c *gin.Context) (bool, error) {
+	likeUserKey := "post:users" + strconv.Itoa(postID)
+	isLiked, err := redisClient.SIsMember(c, likeUserKey, userID).Result()
+	return isLiked, err
 }
-func LikeHandler(userID int,confessionID int,c*gin.Context)error{
-	pipe:=redisClient.Pipeline()
-	likeUserKey:="confession:users"+strconv.Itoa(confessionID)
-	hashKey:="confession:"+strconv.Itoa(confessionID)
-	pipe.SAdd(c,likeUserKey,userID)
-	pipe.HIncrBy(c,hashKey,"likes",1)
-	_,err:=pipe.Exec(c)
+func LikeHandler(userID int, postID int, c *gin.Context) error {
+	pipe := redisClient.Pipeline()
+	likeUserKey := "post:users" + strconv.Itoa(postID)
+	hashKey := "post:" + strconv.Itoa(postID)
+	pipe.SAdd(c, likeUserKey, userID)
+	pipe.HIncrBy(c, hashKey, "likes", 1)
+	_, err := pipe.Exec(c)
 	return err
 }
 
-func CancelLikeHandler(userID int,confessionID int,c *gin.Context)error{
-	pipe:=redisClient.Pipeline()
-	likeUserKey:="confession:users"+strconv.Itoa(confessionID)
-	hashKey:="confession:"+strconv.Itoa(confessionID)
-	pipe.SRem(c,likeUserKey,userID)
-	pipe.HIncrBy(c,hashKey,"likes",-1)
-	_,err:=pipe.Exec(c)
+func CancelLikeHandler(userID int, postID int, c *gin.Context) error {
+	pipe := redisClient.Pipeline()
+	likeUserKey := "post:users" + strconv.Itoa(postID)
+	hashKey := "post:" + strconv.Itoa(postID)
+	pipe.SRem(c, likeUserKey, userID)
+	pipe.HIncrBy(c, hashKey, "likes", -1)
+	_, err := pipe.Exec(c)
 	return err
 }
-func GetLikeAndViews(confessionID int, c*gin.Context)(string,string,bool,error){
-	hashKey:="confession:"+strconv.Itoa(confessionID)
-	stats,err:=redisClient.HGetAll(c,hashKey).Result()
-	if err !=nil{
-		if err==redis.Nil{
-			return "","",false,nil 
-		}else{
-			return "","",false,err
+func GetLikeAndViews(postID int, c *gin.Context) (string, string, bool, error) {
+	hashKey := "post:" + strconv.Itoa(postID)
+	stats, err := redisClient.HGetAll(c, hashKey).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return "", "", false, nil
+		} else {
+			return "", "", false, err
 		}
 	}
-	return stats["likes"],stats["views"],true,nil	
+	return stats["likes"], stats["views"], true, nil
 }
-func SetHashToCache(confessionID int,c *gin.Context)error{
-	hashKey:="confession:"+strconv.Itoa(confessionID)
-	err:=redisClient.HSet(c,hashKey,map[string]interface{}{
-		"likes":0,
-		"views":0,
+func SetHashToCache(postID int, c *gin.Context) error {
+	hashKey := "post:" + strconv.Itoa(postID)
+	err := redisClient.HSet(c, hashKey, map[string]interface{}{
+		"likes": 0,
+		"views": 0,
 	}).Err()
 	return err
 }
+func UpdateHot(c *gin.Context, postID int, likes int, views int) error {
+	hot := likes*3 + views*2
+	postIDStr := strconv.Itoa(postID)
+	ctx := c.Request.Context()
+	err := redisClient.ZAdd(ctx, "post:hot:rank", []redis.Z{
+		{
+			Score:  float64(hot),
+			Member: postIDStr,
+		},
+	}...).Err()
+	return err
+}
+func GetTopHotRank(c *gin.Context) ([]int, error) {
+	members, err := redisClient.ZRevRange(c, "post:hot:rank", 0, 9).Result()
+	if err != nil {
+		return nil, err
+	}
+	postIDs := make([]int, len(members))
+	for i, member := range members {
+		postID, err := strconv.Atoi(member)
+		if err != nil {
+			return nil, err
+		}
+		postIDs[i] = postID
+	}
+	return postIDs, nil
+}
+func GetHot(c *gin.Context, postID int) (float64, error) {
+	postIDStr := strconv.Itoa(postID)
+	hot, err := redisClient.ZScore(c, "post:hot:rank", postIDStr).Result()
+	if err != nil {
+		return 0, err
+	}
+	return hot, nil
 
+}
 
-
-//设置文件的hash值
-func SetFileHashToCache(md5str string,path string,c *gin.Context)error{
-	return redisClient.Set(c,"md5:"+md5str,path,0).Err()
+// 设置文件的hash值
+func SetFileHashToCache(md5str string, path string, c *gin.Context) error {
+	return redisClient.Set(c, "md5:"+md5str, path, 0).Err()
 }
 func GetFileHashFromCache(md5Str string, c *gin.Context) (string, bool, error) {
 	path, err := redisClient.Get(c, "md5:"+md5Str).Result()
@@ -87,35 +119,4 @@ func GetFileHashFromCache(md5Str string, c *gin.Context) (string, bool, error) {
 	}
 
 	return path, true, nil
-}
-
-// 定时任务同步缓存到数据库
-func SyncCacheToDB() {
-	ctx := context.Background()
-
-	keys, err := redisClient.Keys(ctx, "confession:*").Result()
-	if err != nil {
-		log.Printf("Error getting keys: %v\n", err)
-		return
-	}
-
-	for _, key := range keys {
-		confession_id := key[len("confession:"):]
-
-		val, err := redisClient.HGetAll(ctx, key).Result()
-		if err != nil {
-			log.Printf("Error getting confession data from cache: %v\n", err)
-			return
-		}
-		likes,_:=strconv.Atoi(val["likes"])
-		views,_:=strconv.Atoi(val["views"])
-		err = database.DB.Model(&models.Confession{}).Where("id =?",confession_id).Updates(map[string]interface{}{
-			"likes":likes,
-			"views":views,
-		}).Error
-		if err != nil {
-			log.Printf("Error updating database: %v\n", err)
-			return
-		}
-	}
 }
