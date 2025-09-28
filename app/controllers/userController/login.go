@@ -1,4 +1,4 @@
-package user
+package userController
 
 import (
 	"confession-wall-backend/app/apiException"
@@ -48,19 +48,19 @@ func Login(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.PasswordError, err)
 		return
 	}
-	user,err=userService.GetUserByUsername(data.Username)
-	if err!=nil{
-		apiException.AbortWithException(c,apiException.ServerError,err)
+	user, err = userService.GetUserByUsername(data.Username)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	token,err:=utils.GenerateToken(user.ID)
-	if err!=nil{
-		apiException.AbortWithException(c,apiException.ServerError,err)
+	token, err := utils.GenerateToken(user.ID)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
 	result := ShowUser{
 		Username: user.Username,
-		Token: token,
+		Token:    token,
 	}
 
 	utils.JsonSuccessResponse(c, result)

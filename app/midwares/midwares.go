@@ -6,7 +6,6 @@ import (
 	"errors"
 	"strings"
 
-	
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,52 +32,50 @@ func ErrHandler() gin.HandlerFunc {
 // authMiddleware 身份鉴权中间件
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader:=c.GetHeader("Authorization")
-		if authHeader==""{
-			c.JSON(401,gin.H{
-				"code":401,
-				"msg":"请先登录",
-				"data":nil,
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(401, gin.H{
+				"code": 401,
+				"msg":  "请先登录",
+				"data": nil,
 			})
 			c.Abort()
 			return
 		}
-		parts:=strings.SplitN(authHeader,"",2)
-		if len(parts)!=2||parts[0]!="bearer"{
-			c.JSON(401,gin.H{
-				"code":401,
-				"msg":"token格式无效",
-				"data":nil,
-			})
-			c.Abort()
-			return
-
-		}
-		tokenString:=parts[1]
-		token,err:=utils.ParseToken(tokenString)
-		if err!=nil{
-			c.JSON(401,gin.H{
-				"code":401,
-				"msg":"token无效",
-				"data":nil,
+		parts := strings.SplitN(authHeader, "", 2)
+		if len(parts) != 2 || parts[0] != "bearer" {
+			c.JSON(401, gin.H{
+				"code": 401,
+				"msg":  "登录异常，请重新登录",
+				"data": nil,
 			})
 			c.Abort()
 			return
 
 		}
-		claims,err:=utils.ExtractClaims(token)
-		if err!=nil{
-			c.JSON(401,gin.H{
-				"code":401,
-				"msg":"提取token失败",
-				"data":nil,
+		tokenString := parts[1]
+		token, err := utils.ParseToken(tokenString)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"code": 401,
+				"msg":  "登录异常，请重新登录",
+				"data": nil,
 			})
 			c.Abort()
 			return
 
 		}
+		claims, err := utils.ExtractClaims(token)
+		if err != nil {
+			c.JSON(401, gin.H{
+				"code": 401,
+				"msg":  "登录异常，请重新登录",
+				"data": nil,
+			})
+			c.Abort()
+			return
 
-
+		}
 		c.Set("user_id", claims["user_id"])
 		c.Next()
 	}

@@ -1,4 +1,4 @@
-package user
+package userController
 
 import (
 	"confession-wall-backend/app/apiException"
@@ -60,9 +60,9 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	hashPassword, err:= bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
-	if err!=nil{
-		apiException.AbortWithException(c,apiException.ServerError,err)
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
 	err = userService.Register(&models.User{

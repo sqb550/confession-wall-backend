@@ -1,4 +1,4 @@
-package user
+package userController
 
 import (
 	"confession-wall-backend/app/apiException"
@@ -11,7 +11,7 @@ import (
 )
 
 type UpdateNameData struct {
-	Name   string `json:"name"`
+	Name string `json:"name"`
 }
 
 type PasswordData struct {
@@ -20,7 +20,7 @@ type PasswordData struct {
 }
 
 func UpdateName(c *gin.Context) {
-	userID,_:=c.Get("user_id")
+	userID, _ := c.Get("user_id")
 	userIDInt, _ := userID.(int)
 	var data UpdateNameData
 	err := c.ShouldBindJSON(&data)
@@ -45,7 +45,7 @@ func UpdateName(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	err = userService.UpdateConfession(userIDInt, data.Name)
+	err = userService.Updatepost(userIDInt, data.Name)
 	if err != nil {
 		tx.Rollback()
 		apiException.AbortWithException(c, apiException.ServerError, err)
@@ -56,7 +56,7 @@ func UpdateName(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 func UpdatePassword(c *gin.Context) {
-	userID,_:=c.Get("user_id")
+	userID, _ := c.Get("user_id")
 	userIDInt, _ := userID.(int)
 	var data PasswordData
 	err := c.ShouldBindJSON(&data)

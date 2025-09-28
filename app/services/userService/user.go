@@ -36,8 +36,8 @@ func UpdateName(UserID int, Name string) error {
 
 }
 
-func UpdateConfession(UserID int, Name string) error {
-	result := database.DB.Model(&models.Confession{}).Where("user_id=?", UserID).Where("anonymous=?", false).Update("Name", Name)
+func Updatepost(UserID int, Name string) error {
+	result := database.DB.Model(&models.Post{}).Where("user_id=?", UserID).Where("anonymous=?", false).Update("Name", Name)
 	return result.Error
 
 }
@@ -47,7 +47,7 @@ func UpdatePassword(NewPassword string, UserID int) error {
 	return result.Error
 }
 
-func UploadAvatar(UserID int,url string)error{
-	result:=database.DB.Where("user_id=?",UserID).Update("Avatar",url)
+func UploadAvatar(UserID int, url string) error {
+	result := database.DB.Where("user_id=?", UserID).Update("Avatar", url)
 	return result.Error
 }
