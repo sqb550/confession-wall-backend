@@ -13,8 +13,13 @@ import (
 )
 
 func UploadAvatar(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	file, err := c.FormFile("file")
 	if err != nil {
 		apiException.AbortWithException(c, apiException.FlieError, err)
@@ -23,19 +28,22 @@ func UploadAvatar(c *gin.Context) {
 	src, err := file.Open()
 	if err != nil {
 		apiException.AbortWithException(c, apiException.FlieError, err)
+		return
 	}
 	hash := md5.New()
 	_, err = io.Copy(hash, src)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 	md5Str := hex.EncodeToString(hash.Sum(nil))
 	path, flag, err := utils.GetFileHashFromCache(md5Str, c)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 	if flag {
-		url := "http://localhost:8080" + path
+		url := "http://127.0.0.1:8080" + path
 		err = userService.UploadAvatar(userIDInt, url)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
@@ -53,6 +61,7 @@ func UploadAvatar(c *gin.Context) {
 	err = utils.SetFileHashToCache(md5Str, savePath, c)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 
 	err = c.SaveUploadedFile(file, savePath)
@@ -61,12 +70,14 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	url := "http://localhost:8080/uploads/" + uniqueName
+	url := "http://127.0.0.1:8080/uploads/" + uniqueName
 	err = userService.UploadAvatar(userIDInt, url)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 
-	utils.JsonSuccessResponse(c, nil)
+
+	utils.JsonSuccessResponse(c, url)
 
 }

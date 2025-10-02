@@ -10,10 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
+
 )
 
 func main() {
 	database.Init()
+	utils.InitRedis()
+
 	r := gin.Default()
 	err := os.MkdirAll("./uploads", 0755)
 	if err != nil {
@@ -24,8 +27,8 @@ func main() {
 	r.Use(midwares.ErrHandler())
 
 	c := cron.New()
-	_, err1 := c.AddFunc("**/5****", utils.SyncCacheToDB)
-	_, err2 := c.AddFunc("******", utils.ScheduleRelease)
+	_, err1 := c.AddFunc("*/5 * * * *", utils.SyncCacheToDB)
+	_, err2 := c.AddFunc("* * * * *", utils.ScheduleRelease)
 	if err1 != nil || err2 != nil {
 		log.Fatal("Add tasks error:", err)
 	}

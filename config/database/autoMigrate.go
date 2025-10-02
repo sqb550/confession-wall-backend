@@ -12,6 +12,7 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Post{},
 		&models.Comment{},
 		&models.Block{},
+		&models.Picture{},
 	)
 	return err
 }

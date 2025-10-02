@@ -1,5 +1,4 @@
 package postController
-
 import (
 	"confession-wall-backend/app/apiException"
 	"confession-wall-backend/app/utils"

@@ -5,9 +5,9 @@ import (
 	"confession-wall-backend/config/database"
 )
 
-func GetUserByUsername(Username string) (*models.User, error) {
+func GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	result := database.DB.Where("username=?", Username).First(&user)
+	result := database.DB.Where("username=?", username).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -19,9 +19,9 @@ func Register(user *models.User) error {
 	return result.Error
 }
 
-func SeekUser(UserID int) (*models.User, error) {
+func SeekUser(userID int) (*models.User, error) {
 	var data models.User
-	result := database.DB.Where("ID=?", UserID).First(&data)
+	result := database.DB.Where("id=?", userID).First(&data)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -30,24 +30,27 @@ func SeekUser(UserID int) (*models.User, error) {
 
 }
 
-func UpdateName(UserID int, Name string) error {
-	result := database.DB.Model(&models.User{}).Where("user_id=?", UserID).Update("Name", Name)
+func UpdateName(userID int, name string) error {
+	result := database.DB.Model(&models.User{}).Where("id=?", userID).Update("Name", name)
 	return result.Error
 
 }
 
-func Updatepost(UserID int, Name string) error {
-	result := database.DB.Model(&models.Post{}).Where("user_id=?", UserID).Where("anonymous=?", false).Update("Name", Name)
+func Updatepost(userID int, name string) error {
+	result := database.DB.Model(&models.Post{}).Where("id=?", userID).Where("anonymous=?", 0).Update("Name", name)
 	return result.Error
 
 }
 
-func UpdatePassword(NewPassword string, UserID int) error {
-	result := database.DB.Where("user_id=?", UserID).Update("password", NewPassword)
+func UpdatePassword(newPassword string, userID int) error {
+	result := database.DB.Model(&models.User{}).Where("id=?", userID).Update("password", newPassword)
 	return result.Error
 }
 
-func UploadAvatar(UserID int, url string) error {
-	result := database.DB.Where("user_id=?", UserID).Update("Avatar", url)
+func UploadAvatar(userID int, url string) error {
+	result := database.DB.Model(&models.User{}).Where("id=?", userID).Update("Avatar", url)
 	return result.Error
 }
+
+
+

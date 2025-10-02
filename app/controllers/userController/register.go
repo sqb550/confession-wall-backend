@@ -14,7 +14,7 @@ import (
 )
 
 type UserData struct {
-	Username string `json:"user_name"`
+	Username string `json:"username"`
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
@@ -28,7 +28,7 @@ func Register(c *gin.Context) {
 	}
 
 	flag := true
-	if data.Username == "" {
+	if data.Username == " " {
 		flag = false
 	}
 	for _, r := range data.Username {
@@ -38,6 +38,7 @@ func Register(c *gin.Context) {
 	}
 	if !flag {
 		apiException.AbortWithException(c, apiException.UsernameError, nil)
+		return
 	}
 
 	flag = false

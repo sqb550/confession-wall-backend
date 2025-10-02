@@ -4,8 +4,8 @@ import (
 	"confession-wall-backend/app/apiException"
 	"confession-wall-backend/app/models"
 	"confession-wall-backend/app/services/postService"
-	"confession-wall-backend/app/services/userService"
 	"confession-wall-backend/app/utils"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,36 +13,39 @@ import (
 type CommentData struct {
 	PostID  int    `json:"post_id"`
 	Content string `json:"content"`
-	ReplyID int    `json:"reply_id"`
+	ReplyTo int    `json:"reply_to"`
 }
 
 func Comment(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	var data CommentData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	result, err := userService.SeekUser(userIDInt)
-	if err != nil {
-		apiException.AbortWithException(c, apiException.ServerError, err)
-	}
 	err = postService.Comment(&models.Comment{
 		PostID:   data.PostID,
-		Name: result.Name,
-		ReplyID:  data.ReplyID,
+		UserID: userIDInt,
+		ReplyTo:  data.ReplyTo,
 		Content:  data.Content,
-		Avatar: result.Avatar,
 	})
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 	err = postService.IncrComments(data.PostID)
 	if err != nil {
+		fmt.Println(err)
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
-	utils.JsonSuccessResponse(c, nil)
+	utils.JsonSuccessResponse(c, "评论成功")
 
 }

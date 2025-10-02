@@ -12,7 +12,7 @@ var redisClient *redis.Client
 func InitRedis() {
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
-		Password: "",
+		Password: "123456",
 		DB:       0,
 	})
 
@@ -60,14 +60,6 @@ func GetLikeAndViews(postID int, c *gin.Context) (string, string, bool, error) {
 	}
 	return stats["likes"], stats["views"], true, nil
 }
-func SetHashToCache(postID int, c *gin.Context) error {
-	hashKey := "post:" + strconv.Itoa(postID)
-	err := redisClient.HSet(c, hashKey, map[string]interface{}{
-		"likes": 0,
-		"views": 0,
-	}).Err()
-	return err
-}
 func UpdateHot(c *gin.Context, postID int, likes int, views int) error {
 	hot := likes*3 + views*2
 	postIDStr := strconv.Itoa(postID)
@@ -85,25 +77,17 @@ func GetTopHotRank(c *gin.Context) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	postIDs := make([]int, len(members))
-	for i, member := range members {
+	postIDs := make([]int,0)
+	for _, member := range members {
 		postID, err := strconv.Atoi(member)
 		if err != nil {
 			return nil, err
 		}
-		postIDs[i] = postID
+		postIDs=append(postIDs,postID)
 	}
 	return postIDs, nil
 }
-func GetHot(c *gin.Context, postID int) (float64, error) {
-	postIDStr := strconv.Itoa(postID)
-	hot, err := redisClient.ZScore(c, "post:hot:rank", postIDStr).Result()
-	if err != nil {
-		return 0, err
-	}
-	return hot, nil
 
-}
 
 // 设置文件的hash值
 func SetFileHashToCache(md5str string, path string, c *gin.Context) error {
@@ -117,6 +101,5 @@ func GetFileHashFromCache(md5Str string, c *gin.Context) (string, bool, error) {
 		}
 		return "", false, err
 	}
-
 	return path, true, nil
 }

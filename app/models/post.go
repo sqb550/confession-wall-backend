@@ -5,11 +5,9 @@ import "time"
 type Post struct {
 	ID            uint      `json:"post_id"`
 	UserID        int       `json:"user_id"`
-	Avatar        string    `json:"avatar"`
+	Name string `json:"name"`
 	Content       string    `json:"content"`
-	Picture       []string  `json:"picture"`
 	Likes         int       `json:"likes"`
-	Name          string    `json:"name"`
 	Views         int       `json:"views"`
 	Comments      int       `json:"comments"`
 	Invisible     bool      `json:"invisible"`

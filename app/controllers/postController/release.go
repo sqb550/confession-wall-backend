@@ -6,27 +6,35 @@ import (
 	"confession-wall-backend/app/services/postService"
 	"confession-wall-backend/app/services/userService"
 	"confession-wall-backend/app/utils"
+	"fmt"
+	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type ReleaseData struct {
-	Content       string    `json:"content" binding:"required"`
+	Content       string    `json:"content"`
 	Picture       []string  `json:"picture"`
-	Anonymous     bool      `json:"anonymous" binding:"required"`
-	Invisible     bool      `json:"invisible" binding:"required"`
-	ReleaseTime   time.Time `json:"release_time" binding:"required"`
-	ReleaseStatus bool      `json:"release_status" binding:"required"`
+	Anonymous     bool      `json:"anonymous"`
+	Invisible     bool      `json:"invisible"`
+	ReleaseTime   time.Time `json:"release_time"`
+	ReleaseStatus bool      `json:"release_status"`
 }
 
 func Release(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	var data ReleaseData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
+		fmt.Println(err)
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -35,30 +43,30 @@ func Release(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	var name string
-	if data.Anonymous {
-		name = uuid.New().String()
-
-	} else {
-		name = user.Name
-	}
+	
 	var releaseTime time.Time
 	if data.ReleaseStatus {
 		releaseTime = time.Now()
 	} else {
 		releaseTime = data.ReleaseTime
 	}
-
-	err = postService.Releasepost(&models.Post{
+	var name string
+	if data.Anonymous{
+		number:=1000+rand.Intn(1000)
+		numberStr:=strconv.Itoa(number)
+		name="用户"+numberStr
+	}else{
+		name=user.Name
+	}
+	postID,err := postService.ReleasePost(&models.Post{
 		UserID:        userIDInt,
-		Avatar:        user.Avatar,
+		Name:name,
 		Content:       data.Content,
-		Picture:       data.Picture,
 		Invisible:     data.Invisible,
 		Anonymous:     data.Anonymous,
-		Name:          name,
 		ReleaseTime:   releaseTime,
-		ReleaseStatus: true,
+		UpdatedAt: releaseTime,
+		ReleaseStatus: data.ReleaseStatus,
 		Likes:         0,
 		Views:         0,
 	})
@@ -66,6 +74,23 @@ func Release(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
+	err=utils.UpdateHot(c,postID,0,0)
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	for _,url:=range data.Picture{
+		err=postService.ReleasePicture(&models.Picture{
+			URL: url,
+			PostID: postID,
+		})
+		if err!=nil{
+			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
+		}
+
+	}
+
 	utils.JsonSuccessResponse(c, nil)
 
 }

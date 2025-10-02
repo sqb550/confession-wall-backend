@@ -42,8 +42,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		parts := strings.SplitN(authHeader, "", 2)
-		if len(parts) != 2 || parts[0] != "bearer" {
+		parts:= strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0]!="Bearer" {
 			c.JSON(401, gin.H{
 				"code": 401,
 				"msg":  "登录异常，请重新登录",

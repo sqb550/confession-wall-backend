@@ -17,8 +17,9 @@ type LoginData struct {
 }
 
 type ShowUser struct {
-	Username string `json:"username"`
+	UserID int `json:"user_id"`
 	Token    string `json:"token"`
+	Avatar   string`json:"avatar"`
 }
 
 func Login(c *gin.Context) {
@@ -29,7 +30,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	//获取用户信息和判断用户是否存在
 	var user *models.User
 	user, err = userService.GetUserByUsername(data.Username)
 	if err != nil {
@@ -41,16 +41,9 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	//判断密码是否正确
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password))
 	if err != nil {
 		apiException.AbortWithException(c, apiException.PasswordError, err)
-		return
-	}
-	user, err = userService.GetUserByUsername(data.Username)
-	if err != nil {
-		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
 	token, err := utils.GenerateToken(user.ID)
@@ -59,8 +52,9 @@ func Login(c *gin.Context) {
 		return
 	}
 	result := ShowUser{
-		Username: user.Username,
+		UserID: int(user.ID),
 		Token:    token,
+		Avatar: user.Avatar,
 	}
 
 	utils.JsonSuccessResponse(c, result)

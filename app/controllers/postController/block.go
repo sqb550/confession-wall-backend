@@ -20,8 +20,13 @@ type GetBlockedData struct{
 }
 
 func Block(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	var data BlockData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
@@ -32,12 +37,21 @@ func Block(c *gin.Context) {
 		UserID:    userIDInt,
 		BlockedID: data.BlockID,
 	})
-	utils.JsonSuccessResponse(c,nil)
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	utils.JsonSuccessResponse(c,"拉黑成功")
 }
 
 func ShowBlock(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	result, err := postService.ShowBlock(userIDInt) //result为post中的结构体数组
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)

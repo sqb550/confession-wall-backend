@@ -42,7 +42,7 @@ func SyncCacheToDB() {
 
 func ScheduleRelease() {
 	now := time.Now()
-	result := database.DB.Model(&models.Post{}).Where("release_status=? AND release_time<=?", false, now).Update("release_time", true)
+	result := database.DB.Model(&models.Post{}).Where("release_status=? AND release_time<=?", false, now).Update("release_status", true)
 	err := result.Error
 	if err != nil {
 		log.Printf("Error upload posts: %v\n", err)

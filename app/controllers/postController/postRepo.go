@@ -3,6 +3,7 @@ package postController
 import (
 	"confession-wall-backend/app/apiException"
 	"confession-wall-backend/app/services/postService"
+	"confession-wall-backend/app/services/userService"
 	"strconv"
 
 	"confession-wall-backend/app/utils"
@@ -14,12 +15,13 @@ import (
 
 
 
-type PageQuery struct {
-	Page     int `form:"page" json:"page"`
-	PageSize int `form:"page_size" json:"page_size"`
+type PageData struct {
+	Page     int `json:"page"`
+	PageSize int `json:"page_size"`
 }
 
-type ShowPostData struct {
+type PostData struct {
+	PostID      int      `json:"post_id"`
 	Name        string    `json:"name"`
 	Likes       int       `json:"likes"`
 	Comments    int       `json:"comments"`
@@ -43,19 +45,42 @@ type UpdateData struct {
 
 
 func ShowPosts(c *gin.Context) {
-	var data PageQuery
-	err := c.ShouldBindQuery(&data)
-	if err != nil {
-		apiException.AbortWithException(c, apiException.ServerError, err)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
 	}
-	offset := (data.Page - 1) * data.PageSize                  //计算偏移量
-	result, err := postService.Showpost(offset, data.PageSize) //result为post中的结构体数组
+	userIDInt:=int(userID)
+	var data PageData
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+	offset := (data.Page - 1) * data.PageSize 
+	var blockedID []int
+	blocks,err:=postService.ShowBlock(userIDInt) 
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+	for _,block:=range blocks{
+		blockedID=append(blockedID, block.BlockedID)
+	}              
+	result, err := postService.ShowPost(offset, data.PageSize,blockedID) //result为post中的结构体数组
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 
-	var Newpost []ShowPostData
+	var Newpost []PostData
 	for _, data := range result {
+		user, err := userService.SeekUser(data.UserID)
+		if err != nil {
+			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
+		}
 		likesStr, viewsStr, flag, err := utils.GetLikeAndViews(int(data.ID), c)
 		likes := 0
 		views := 0
@@ -67,15 +92,25 @@ func ShowPosts(c *gin.Context) {
 			likes, _ = strconv.Atoi(likesStr)
 			views, _ = strconv.Atoi(viewsStr)
 		}
+		pictures,err:=postService.GetPictures(int(data.ID))
+		if err!=nil{
+			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
+		}
+		urls:=make([]string,0)
+		for _,picture:=range pictures{
+			urls = append(urls, picture.URL)
+		}
 		Newpost = append(Newpost,
-			ShowPostData{
+			PostData{
+				PostID: int(data.ID),
 				Name:      data.Name,
 				Likes:     likes,
 				Comments:  data.Comments,
 				Views:     views,
 				Content:   data.Content,
-				Avatar:    data.Avatar,
-				Picture:   data.Picture,
+				Avatar:    user.Avatar,
+				Picture:   urls,
 				UpdatedAt: data.UpdatedAt,
 			})
 		err = utils.IncrViewCount(int(data.ID), c)
@@ -83,15 +118,24 @@ func ShowPosts(c *gin.Context) {
 			apiException.AbortWithException(c, apiException.ServerError, nil)
 			return
 		}
+		err=utils.UpdateHot(c,int(data.ID),likes,views+1)
+		if err != nil {
+			apiException.AbortWithException(c, apiException.ServerError, nil)
+			return
+		}
 	}
-
 	utils.JsonSuccessResponse(c, Newpost)
 }
 
 func ShowMyPosts(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
-	result, err := postService.ShowMypost(userIDInt)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
+	result, err := postService.ShowMyPost(userIDInt)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 	}

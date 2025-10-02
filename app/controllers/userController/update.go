@@ -20,8 +20,13 @@ type PasswordData struct {
 }
 
 func UpdateName(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	var data UpdateNameData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
@@ -40,7 +45,7 @@ func UpdateName(c *gin.Context) {
 		}
 	}()
 	err = userService.UpdateName(userIDInt, data.Name)
-	if err != nil {
+	if err != nil{
 		tx.Rollback()
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -52,12 +57,16 @@ func UpdateName(c *gin.Context) {
 		return
 	}
 	_ = tx.Commit()
-
 	utils.JsonSuccessResponse(c, nil)
 }
 func UpdatePassword(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	userIDInt, _ := userID.(int)
+	val, _ := c.Get("user_id")
+	userID,ok:=val.(float64)
+	if !ok{
+		apiException.AbortWithException(c,apiException.ServerError,nil)
+		return
+	}
+	userIDInt:=int(userID)
 	var data PasswordData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
@@ -74,10 +83,15 @@ func UpdatePassword(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.PasswordError, err)
 		return
 	}
-	hashNewPassword, _ := bcrypt.GenerateFromPassword([]byte(data.NewPassword), bcrypt.DefaultCost)
+	hashNewPassword, err:= bcrypt.GenerateFromPassword([]byte(data.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
 	err = userService.UpdatePassword(string(hashNewPassword), userIDInt)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
 	}
 	utils.JsonSuccessResponse(c, nil)
 

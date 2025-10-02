@@ -7,9 +7,9 @@ import (
 )
 
 // 生成token
-func GenerateToken(UserID uint) (string, error) {
+func GenerateToken(userID uint) (string, error) {
 	claims:=jwt.MapClaims{
-        "user_id":UserID,
+        "user_id":userID,
         "exp":time.Now().Add(time.Hour*24).Unix(),
         "iat":time.Now().Unix(),
         "iss":"gin_jwt_demo",
