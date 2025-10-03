@@ -4,3 +4,11 @@ database:
   port: 3306
   user: root
   pass: " "
+
+redis:
+  addr: "127.0.0.1:6379"
+  password: " "
+  db: 0
+
+jwt:
+  secret: " "

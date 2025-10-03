@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"confession-wall-backend/config/config"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -11,9 +12,9 @@ var redisClient *redis.Client
 
 func InitRedis() {
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "123456",
-		DB:       0,
+		Addr:   config.Config.GetString("redis.addr"),
+		Password:config.Config.GetString("redis.password"),
+		DB:      config.Config.GetInt("redis.db"),
 	})
 
 }

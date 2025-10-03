@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"confession-wall-backend/config/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +17,7 @@ func GenerateToken(userID uint) (string, error) {
         "nbf":time.Now().Unix(),
     }
     token:=jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
-    tokenStr,err:=token.SignedString([]byte("your_secret_key"))
+    tokenStr,err:=token.SignedString([]byte(config.Config.GetString("jwt.secret")))
     if err!=nil{
         return "",err
     }
@@ -30,7 +31,7 @@ func ParseToken(tokenStr string) (*jwt.Token, error) {
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil,jwt.ErrSignatureInvalid
         }
-        return []byte("your_secret_key"), nil
+        return []byte(config.Config.GetString("jwt.secret")), nil
     })
         
     if err != nil {
