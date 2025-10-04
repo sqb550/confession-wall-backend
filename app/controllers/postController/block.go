@@ -52,7 +52,7 @@ func ShowBlock(c *gin.Context) {
 		return
 	}
 	userIDInt:=int(userID)
-	result, err := postService.ShowBlock(userIDInt) //result为post中的结构体数组
+	result, err := postService.QueryBlock(userIDInt) //result为post中的结构体数组
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return

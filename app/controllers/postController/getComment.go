@@ -5,6 +5,7 @@ import (
 	"confession-wall-backend/app/services/postService"
 	"confession-wall-backend/app/services/userService"
 	"confession-wall-backend/app/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +13,7 @@ import (
 type postComment struct {
 	PostID int `json:"post_id" form:"post_id"`
 }
-type GetCommentsData struct{
+type QueryCommentsData struct{
 	ID uint `json:"id"`
 	Content string `json:"content"`
 	ReplyTo int `json:"reply_to"`
@@ -20,7 +21,7 @@ type GetCommentsData struct{
 	Author string `json:"author"`
 }
 
-func GetComment(c *gin.Context) {
+func QueryComment(c *gin.Context) {
 	val, _ := c.Get("user_id")
 	userID,ok:=val.(float64)
 	if !ok{
@@ -34,9 +35,9 @@ func GetComment(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	blocked,err:=postService.ShowBlock(userIDInt)
+	blocked,err:=postService.QueryBlock(userIDInt)
 	if err!=nil{
-		apiException.AbortWithException(c, apiException.ParamError, err)
+		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
 	blockIDs:=make([]int,0)
@@ -44,20 +45,19 @@ func GetComment(c *gin.Context) {
 		blockIDs=append(blockIDs, block.BlockedID)
 
 	}
-
-	result, err := postService.ShowComments(data.PostID,blockIDs)
+	result, err := postService.QueryComments(data.PostID,blockIDs)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	var comments []GetCommentsData
+	var comments []QueryCommentsData
 	for _,data:=range result{
 		user,err:=userService.SeekUser(data.UserID)
 		if err!=nil{
 			apiException.AbortWithException(c,apiException.ServerError,err)
 			return
 		}
-		comments=append(comments,GetCommentsData{
+		comments=append(comments,QueryCommentsData{
 			Content: data.Content,
 			ID: data.ID,
 			ReplyTo: data.ReplyTo,
@@ -65,6 +65,25 @@ func GetComment(c *gin.Context) {
 			Avatar: user.Avatar,
 		})
 	}
+	err = utils.IncrViewCount(data.PostID, c)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, nil)
+		return
+	}
+	likesStr, viewsStr, _, err := utils.GetLikeAndViews(data.PostID, c)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+	likes, _ := strconv.Atoi(likesStr)
+	views, _ := strconv.Atoi(viewsStr)
+	
+	err=utils.UpdateHot(c,data.PostID,likes,views)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, nil)
+		return
+	}
+
 	utils.JsonSuccessResponse(c, comments)
 
 }

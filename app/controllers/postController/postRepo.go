@@ -3,7 +3,7 @@ package postController
 import (
 	"confession-wall-backend/app/apiException"
 	"confession-wall-backend/app/services/postService"
-	"confession-wall-backend/app/services/userService"
+	"confession-wall-backend/config/database"
 	"strconv"
 
 	"confession-wall-backend/app/utils"
@@ -32,6 +32,11 @@ type PostData struct {
 	ReleaseTime time.Time `json:"release_time"`
 	UpdatedAt   time.Time `json:"updated_time"`
 }
+type MyPostData struct{
+	Content string `json:"content"`
+	PostID int `json:"post_id"`
+	Urls []string `json:"urls"`
+}
 
 type DeleteData struct {
 	PostID int `form:"post_id" json:"id" binding:"required"`
@@ -44,7 +49,7 @@ type UpdateData struct {
 
 
 
-func ShowPosts(c *gin.Context) {
+func QueryPosts(c *gin.Context) {
 	val, _ := c.Get("user_id")
 	userID,ok:=val.(float64)
 	if !ok{
@@ -60,7 +65,7 @@ func ShowPosts(c *gin.Context) {
 	}
 	offset := (data.Page - 1) * data.PageSize 
 	var blockedID []int
-	blocks,err:=postService.ShowBlock(userIDInt) 
+	blocks,err:=postService.QueryBlock(userIDInt) 
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -68,7 +73,7 @@ func ShowPosts(c *gin.Context) {
 	for _,block:=range blocks{
 		blockedID=append(blockedID, block.BlockedID)
 	}              
-	result, err := postService.ShowPost(offset, data.PageSize,blockedID) //result为post中的结构体数组
+	result, err := postService.QueryPost(offset, data.PageSize,blockedID) //result为post中的结构体数组
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -76,11 +81,6 @@ func ShowPosts(c *gin.Context) {
 
 	var Newpost []PostData
 	for _, data := range result {
-		user, err := userService.SeekUser(data.UserID)
-		if err != nil {
-			apiException.AbortWithException(c, apiException.ServerError, err)
-			return
-		}
 		likesStr, viewsStr, flag, err := utils.GetLikeAndViews(int(data.ID), c)
 		likes := 0
 		views := 0
@@ -109,25 +109,15 @@ func ShowPosts(c *gin.Context) {
 				Comments:  data.Comments,
 				Views:     views,
 				Content:   data.Content,
-				Avatar:    user.Avatar,
+				Avatar:    data.Avatar,
 				Picture:   urls,
 				UpdatedAt: data.UpdatedAt,
 			})
-		err = utils.IncrViewCount(int(data.ID), c)
-		if err != nil {
-			apiException.AbortWithException(c, apiException.ServerError, nil)
-			return
-		}
-		err=utils.UpdateHot(c,int(data.ID),likes,views+1)
-		if err != nil {
-			apiException.AbortWithException(c, apiException.ServerError, nil)
-			return
-		}
 	}
 	utils.JsonSuccessResponse(c, Newpost)
 }
 
-func ShowMyPosts(c *gin.Context) {
+func QueryMyPosts(c *gin.Context) {
 	val, _ := c.Get("user_id")
 	userID,ok:=val.(float64)
 	if !ok{
@@ -135,11 +125,29 @@ func ShowMyPosts(c *gin.Context) {
 		return
 	}
 	userIDInt:=int(userID)
-	result, err := postService.ShowMyPost(userIDInt)
+	result, err := postService.QueryMyPost(userIDInt)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 	}
-	utils.JsonSuccessResponse(c, result)
+	var myPosts []MyPostData
+	for _ ,data:=range result{
+		pictures,err:=postService.GetPictures(int(data.ID))
+		if err!=nil{
+			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
+		}
+		urls:=make([]string,0)
+		for _,picture:=range pictures{
+			urls = append(urls, picture.URL)
+		}
+		myPosts=append(myPosts, MyPostData{
+			Content: data.Content,
+			PostID: int(data.ID),
+			Urls: urls,
+		})
+
+	}
+	utils.JsonSuccessResponse(c, myPosts)
 
 }
 
@@ -151,17 +159,49 @@ func Delete(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
+	tx := database.DB.Begin()
+	if tx.Error != nil {
+		apiException.AbortWithException(c, apiException.ServerError, tx.Error)
+		return
+	}
 
-	err = postService.Delete(data.PostID) //删除某一条帖子
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	err = postService.Delete(tx,data.PostID) //删除某一条帖子
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			tx.Rollback()
 			apiException.AbortWithException(c, apiException.PostNotFound, err)
 		} else {
+			tx.Rollback()
 			apiException.AbortWithException(c, apiException.ServerError, err)
 		}
 		return
-
 	}
+	err=postService.DeletePicture(tx,data.PostID)
+	if err!=nil{
+		tx.Rollback()
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	err=postService.DeleteComment(tx,data.PostID)
+	if err!=nil{
+		tx.Rollback()
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	_ = tx.Commit()
+
+	err=utils.Delete(c,data.PostID)
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+
 	utils.JsonSuccessResponse(c, nil)
 
 }
