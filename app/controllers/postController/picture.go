@@ -25,19 +25,28 @@ func UploadPicture(c *gin.Context) {
 	}
 	var result []string
 	for _, file := range files {
+		maxSize:=int64(5*1024*1024)
+		if file.Size>maxSize{
+			apiException.AbortWithException(c,apiException.FileSizeError,err)
+			return
+		}
 		src, err := file.Open()
 		if err != nil {
 			apiException.AbortWithException(c, apiException.FlieError, err)
+			return
 		}
+		defer src.Close()
 		hash := md5.New()
 		_, err = io.Copy(hash, src)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
 		}
 		md5Str := hex.EncodeToString(hash.Sum(nil))
 		path, flag, err := utils.GetFileHashFromCache(md5Str, c)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
 		}
 		if flag {
 			url := "http://localhost:8080" + path
@@ -50,6 +59,7 @@ func UploadPicture(c *gin.Context) {
 		err = utils.SetFileHashToCache(md5Str, savePath, c)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
 		}
 		err = c.SaveUploadedFile(file, savePath)
 		if err != nil {

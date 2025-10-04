@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 // 请求错误中间件
@@ -51,7 +52,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
-
 		}
 		tokenString := parts[1]
 		token, err := utils.ParseToken(tokenString)
@@ -63,7 +63,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
-
 		}
 		claims, err := utils.ExtractClaims(token)
 		if err != nil {
@@ -74,9 +73,28 @@ func AuthMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
-
 		}
 		c.Set("user_id", claims["user_id"])
 		c.Next()
 	}
 }
+func RateLimiter()gin.HandlerFunc{
+	limiter:=rate.NewLimiter(rate.Limit(10)/60,10)
+	return func(c *gin.Context){
+		clientIP:=c.ClientIP()
+		if !limiter.Allow(){
+			c.JSON(429,gin.H{
+				"code":429,
+				"data":clientIP,
+				"msg":"请求过于频繁,请稍后再试",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+	
+}
+
+
+
