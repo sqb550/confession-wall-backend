@@ -86,6 +86,15 @@ func QueryBlock(userID int) ([]models.Block, error) {
 	}
 	return blocks, nil
 }
+func CheckBlockExist(blockedID int,userID int)error{
+	result:=database.DB.Where("blocked_id=? AND user_id=?",blockedID,userID).First(&models.Block{})
+	return result.Error
+}
+func DeleteBlock(blockedID int,userID int)error{
+	result:=database.DB.Where("blocked_id=? AND user_id=?",blockedID,userID).Delete(&models.Block{})
+	return result.Error
+}
+
 
 func Comment(comment *models.Comment) error {
 	result := database.DB.Create(comment)

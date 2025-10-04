@@ -23,6 +23,7 @@ type PageData struct {
 type PostData struct {
 	PostID      int      `json:"post_id"`
 	Name        string    `json:"name"`
+	UserID      int `json:"user_id"`
 	Likes       int       `json:"likes"`
 	Comments    int       `json:"comments"`
 	Content     string    `json:"content"`
@@ -104,6 +105,7 @@ func QueryPosts(c *gin.Context) {
 		Newpost = append(Newpost,
 			PostData{
 				PostID: int(data.ID),
+				UserID: data.UserID,
 				Name:      data.Name,
 				Likes:     likes,
 				Comments:  data.Comments,

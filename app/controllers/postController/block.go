@@ -8,6 +8,7 @@ import (
 	"confession-wall-backend/app/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type BlockData struct {
@@ -33,15 +34,35 @@ func Block(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	err = postService.Block(&models.Block{
-		UserID:    userIDInt,
-		BlockedID: data.BlockID,
-	})
+	err=postService.CheckBlockExist(data.BlockID,userIDInt)
+	if err!=nil{
+		if err==gorm.ErrRecordNotFound{
+			err = postService.Block(&models.Block{
+				UserID:    userIDInt,
+				BlockedID: data.BlockID,
+			})
+			if err!=nil{
+				apiException.AbortWithException(c,apiException.ServerError,err)
+				return
+			}
+			utils.JsonSuccessResponse(c,"拉黑成功")
+			return
+		}else{
+			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
+		}
+	}
+	err=postService.DeleteBlock(data.BlockID,userIDInt)
 	if err!=nil{
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
-	utils.JsonSuccessResponse(c,"拉黑成功")
+	utils.JsonSuccessResponse(c,"取消拉黑成功")
+	
+	
+
+	
+	
 }
 
 func ShowBlock(c *gin.Context) {
