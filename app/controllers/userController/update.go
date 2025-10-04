@@ -44,13 +44,13 @@ func UpdateName(c *gin.Context) {
 			tx.Rollback()
 		}
 	}()
-	err = userService.UpdateName(userIDInt, data.Name)
+	err = userService.UpdateName(tx,userIDInt, data.Name)
 	if err != nil{
 		tx.Rollback()
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	err = userService.Updatepost(userIDInt, data.Name)
+	err = userService.Updatepost(tx,userIDInt, data.Name)
 	if err != nil {
 		tx.Rollback()
 		apiException.AbortWithException(c, apiException.ServerError, err)

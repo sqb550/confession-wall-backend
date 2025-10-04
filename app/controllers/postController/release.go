@@ -61,6 +61,7 @@ func Release(c *gin.Context) {
 	postID,err := postService.ReleasePost(&models.Post{
 		UserID:        userIDInt,
 		Name:name,
+		Avatar: user.Avatar,
 		Content:       data.Content,
 		Invisible:     data.Invisible,
 		Anonymous:     data.Anonymous,
@@ -88,9 +89,12 @@ func Release(c *gin.Context) {
 			apiException.AbortWithException(c,apiException.ServerError,err)
 			return
 		}
-
 	}
-
-	utils.JsonSuccessResponse(c, nil)
+	total,err:=postService.CountPosts()
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	utils.JsonSuccessResponse(c, total)
 
 }

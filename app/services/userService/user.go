@@ -3,6 +3,8 @@ package userService
 import (
 	"confession-wall-backend/app/models"
 	"confession-wall-backend/config/database"
+
+	"gorm.io/gorm"
 )
 
 func GetUserByUsername(username string) (*models.User, error) {
@@ -30,14 +32,14 @@ func SeekUser(userID int) (*models.User, error) {
 
 }
 
-func UpdateName(userID int, name string) error {
-	result := database.DB.Model(&models.User{}).Where("id=?", userID).Update("Name", name)
+func UpdateName(tx *gorm.DB,userID int, name string) error {
+	result := tx.Model(&models.User{}).Where("id=?", userID).Update("Name", name)
 	return result.Error
 
 }
 
-func Updatepost(userID int, name string) error {
-	result := database.DB.Model(&models.Post{}).Where("id=?", userID).Where("anonymous=?", 0).Update("Name", name)
+func Updatepost(tx *gorm.DB,userID int, name string) error {
+	result := tx.Model(&models.Post{}).Where("id=?", userID).Where("anonymous=?", false).Update("Name", name)
 	return result.Error
 
 }
@@ -51,6 +53,9 @@ func UploadAvatar(userID int, url string) error {
 	result := database.DB.Model(&models.User{}).Where("id=?", userID).Update("Avatar", url)
 	return result.Error
 }
-
+func UpdateAvatar(userID int, url string) error {
+	result := database.DB.Model(&models.Post{}).Where("user_id=?", userID).Update("Avatar", url)
+	return result.Error
+}
 
 

@@ -1,11 +1,16 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Post struct {
 	ID            uint      `json:"post_id"`
 	UserID        int       `json:"user_id"`
 	Name string `json:"name"`
+	Avatar string `json:"avatar"`
 	Content       string    `json:"content"`
 	Likes         int       `json:"likes"`
 	Views         int       `json:"views"`
@@ -15,5 +20,5 @@ type Post struct {
 	ReleaseTime   time.Time `json:"release_time"`
 	ReleaseStatus bool      `json:"release_status"`
 	UpdatedAt     time.Time `json:"updated_time"`
-	DeletedAt     time.Time `json:"deleted_at"`
+	DeletedAt    gorm.DeletedAt `json:"deleted_time"`
 }

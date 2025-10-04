@@ -1,6 +1,10 @@
 package models
 
-type Picture struct{
-	URL string`json:"url"`
-	PostID int `json:"post_id"`
+import "gorm.io/gorm"
+
+type Picture struct {
+	URL       string `json:"url"`
+	PostID    int    `json:"post_id"`
+	DeletedAt gorm.DeletedAt `json:"deleted_time"`
+
 }

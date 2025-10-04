@@ -1,6 +1,7 @@
 package apiException
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ type Error struct {
 
 // Error implements error.
 func (e *Error) Error() string {
-	panic("unimplemented")
+	return fmt.Sprintf("error:code=%d,message=%s",e.Code,e.Msg)
 }
 
 var (
@@ -32,6 +33,7 @@ var (
 	FileNumberError     = NewError(200512, "图片最多上传九张")
 	CancelLikeError     = NewError(200513, "取消点赞失败")
 	HotRankError        = NewError(200514, "排行榜获取失败")
+	FileSizeError=NewError(200515,"文件大小不能超过5MB")
 
 	NotFound = NewError(200404, http.StatusText(http.StatusNotFound))
 )

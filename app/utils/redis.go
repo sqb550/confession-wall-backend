@@ -2,6 +2,7 @@ package utils
 
 import (
 	"confession-wall-backend/config/config"
+	"context"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,25 @@ func GetLikeAndViews(postID int, c *gin.Context) (string, string, bool, error) {
 	}
 	return stats["likes"], stats["views"], true, nil
 }
+func ScanPosts(ctx context.Context)([]string,error){
+	var allKeys []string
+	cursor:=uint64(0)
+	for{
+		var keys []string
+		keys,cursor,err:=redisClient.Scan(ctx,cursor,"post:*",10).Result()
+		if err!=nil{
+			return nil,err
+		}
+		allKeys=append(allKeys,keys...)
+		if cursor== 0 {
+			break
+		}
+	}
+	return allKeys,nil
+}
+
+
+
 func UpdateHot(c *gin.Context, postID int, likes int, views int) error {
 	hot := likes*3 + views*2
 	postIDStr := strconv.Itoa(postID)
@@ -87,6 +107,12 @@ func GetTopHotRank(c *gin.Context) ([]int, error) {
 		postIDs=append(postIDs,postID)
 	}
 	return postIDs, nil
+}
+func Delete(c*gin.Context,postID int)error{
+	postIDStr := strconv.Itoa(postID)
+	ctx := c.Request.Context()
+	err:=redisClient.ZRem(ctx,"post:hot:rank",postIDStr).Err()
+	return err
 }
 
 

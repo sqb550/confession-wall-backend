@@ -13,19 +13,17 @@ import (
 func SyncCacheToDB() {
 	ctx := context.Background()
 
-	keys, err := redisClient.Keys(ctx, "post:*").Result()
+	keys, err := ScanPosts(ctx)
 	if err != nil {
 		log.Printf("Error getting keys: %v\n", err)
 		return
 	}
-
 	for _, key := range keys {
 		post_id := key[len("post:"):]
 
 		val, err := redisClient.HGetAll(ctx, key).Result()
 		if err != nil {
 			log.Printf("Error getting post data from cache: %v\n", err)
-			return
 		}
 		likes, _ := strconv.Atoi(val["likes"])
 		views, _ := strconv.Atoi(val["views"])
@@ -35,7 +33,7 @@ func SyncCacheToDB() {
 		}).Error
 		if err != nil {
 			log.Printf("Error updating database: %v\n", err)
-			return
+			
 		}
 	}
 }
