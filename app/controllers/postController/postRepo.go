@@ -28,7 +28,7 @@ type PostData struct {
 	Content     string    `json:"content"`
 	Views       int       `json:"views"`
 	Avatar      string    `json:"avatar"`
-	Picture     []string  `json:"pictrue"`
+	Picture     []string  `json:"picture"`
 	ReleaseTime time.Time `json:"release_time"`
 	UpdatedAt   time.Time `json:"updated_time"`
 }
