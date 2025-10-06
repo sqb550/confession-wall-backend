@@ -90,11 +90,7 @@ func Release(c *gin.Context) {
 			return
 		}
 	}
-	total,err:=postService.CountPosts()
-	if err!=nil{
-		apiException.AbortWithException(c,apiException.ServerError,err)
-		return
-	}
-	utils.JsonSuccessResponse(c, total)
+	
+	utils.JsonSuccessResponse(c, nil)
 
 }

@@ -51,11 +51,12 @@ func Like(c *gin.Context) {
 	}
 	likes, _ := strconv.Atoi(likesStr)
 	views, _ := strconv.Atoi(viewsStr)
-	err=utils.UpdateHot(c,int(data.PostID),likes,views)
+	err=utils.UpdateHot(c,data.PostID,likes,views)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, nil)
 		return
 	}
-	utils.JsonSuccessResponse(c, "点赞成功")
+
+	utils.JsonSuccessResponse(c, likes)
 
 }

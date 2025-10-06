@@ -135,3 +135,21 @@ func CountPosts()(int64,error){
 	}
 	return count,nil
 }
+func CountComments(repliedID int)(int64,error){
+	var count int64
+	result:=database.DB.Model(&models.Comment{}).Where("replied_id=?",repliedID).Count(&count)
+	if result.Error!=nil{
+		return 0,result.Error
+	}
+	return count,nil
+}
+
+
+func SeekComment(commentID int) (*models.Comment, error) {
+	var data models.Comment
+	result := database.DB.Where("id=?", commentID).First(&data)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &data, nil
+}

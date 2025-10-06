@@ -4,6 +4,7 @@ import (
 	"confession-wall-backend/app/apiException"
 	"confession-wall-backend/app/models"
 	"confession-wall-backend/app/services/postService"
+	"confession-wall-backend/app/services/userService"
 	"confession-wall-backend/app/utils"
 	"fmt"
 
@@ -13,7 +14,10 @@ import (
 type CommentData struct {
 	PostID  int    `json:"post_id"`
 	Content string `json:"content"`
-	ReplyTo int    `json:"reply_to"`
+	RepliedID int    `json:"replied_id"`
+}
+type ShowCommentsData struct{
+	Total int64 `json:"total"`
 }
 
 func Comment(c *gin.Context) {
@@ -30,10 +34,32 @@ func Comment(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
+	var name string
+	if data.RepliedID!=0{
+		comment,err:=postService.SeekComment(data.RepliedID)
+		if err != nil {
+			apiException.AbortWithException(c, apiException.ParamError, err)
+			return
+		}
+		repliedUser,err:=userService.SeekUser(comment.UserID)
+			if err!=nil{
+				apiException.AbortWithException(c,apiException.ServerError,err)
+				return
+			}
+		name=repliedUser.Name
+	}else{
+		postData,err:=postService.SeekPost(data.PostID)
+		if err!=nil{
+			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
+		}
+		name=postData.Name
+	}
 	err = postService.Comment(&models.Comment{
 		PostID:   data.PostID,
 		UserID: userIDInt,
-		ReplyTo:  data.ReplyTo,
+		RepliedID:  data.RepliedID,
+		RepliedTo: name,
 		Content:  data.Content,
 	})
 	if err != nil {
@@ -46,6 +72,14 @@ func Comment(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.JsonSuccessResponse(c, "评论成功")
+	total,err:=postService.CountComments(data.RepliedID)
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	result:=ShowCommentsData{
+		Total: total,
+	}
+	utils.JsonSuccessResponse(c, result)
 
 }

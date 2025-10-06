@@ -108,7 +108,7 @@ func GetTopHotRank(c *gin.Context) ([]int, error) {
 	}
 	return postIDs, nil
 }
-func Delete(c*gin.Context,postID int)error{
+func Delete(c *gin.Context,postID int)error{
 	postIDStr := strconv.Itoa(postID)
 	ctx := c.Request.Context()
 	err:=redisClient.ZRem(ctx,"post:hot:rank",postIDStr).Err()

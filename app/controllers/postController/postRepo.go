@@ -16,8 +16,8 @@ import (
 
 
 type PageData struct {
-	Page     int `json:"page"`
-	PageSize int `json:"page_size"`
+	Page     int `json:"page" form:"page"`
+	PageSize int `json:"page_size" form:"page_size"`
 }
 
 type PostData struct {
@@ -32,6 +32,10 @@ type PostData struct {
 	Picture     []string  `json:"picture"`
 	ReleaseTime time.Time `json:"release_time"`
 	UpdatedAt   time.Time `json:"updated_time"`
+}
+type ShowPosts struct{
+	Total int64 `json:"total"`
+	PostList []PostData `json:"post_list"`
 }
 type MyPostData struct{
 	Content string `json:"content"`
@@ -59,7 +63,7 @@ func QueryPosts(c *gin.Context) {
 	}
 	userIDInt:=int(userID)
 	var data PageData
-	err := c.ShouldBindJSON(&data)
+	err := c.ShouldBindQuery(&data)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
@@ -116,7 +120,16 @@ func QueryPosts(c *gin.Context) {
 				UpdatedAt: data.UpdatedAt,
 			})
 	}
-	utils.JsonSuccessResponse(c, Newpost)
+	total,err:=postService.CountPosts()
+	if err!=nil{
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	showResult:=ShowPosts{
+		Total: total,
+		PostList: Newpost,
+	}
+	utils.JsonSuccessResponse(c, showResult)
 }
 
 func QueryMyPosts(c *gin.Context) {

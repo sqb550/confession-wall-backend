@@ -1,12 +1,12 @@
 database:
   DBname: confessionwall
-  host: "127.0.0.1"
+  host: "121.5.15.69"
   port: 3306
-  user: root
+  user: new_root
   pass: " "
 
 redis:
-  addr: "127.0.0.1:6379"
+  addr: "121.5.15.69:6379"
   password: " "
   db: 0
 

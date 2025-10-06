@@ -16,7 +16,7 @@ type postComment struct {
 type QueryCommentsData struct{
 	ID uint `json:"id"`
 	Content string `json:"content"`
-	ReplyTo int `json:"reply_to"`
+	ReplyTo string `json:"reply_to"`
 	Avatar string `json:"avatar"`
 	Author string `json:"author"`
 }
@@ -60,7 +60,7 @@ func QueryComment(c *gin.Context) {
 		comments=append(comments,QueryCommentsData{
 			Content: data.Content,
 			ID: data.ID,
-			ReplyTo: data.ReplyTo,
+			ReplyTo: data.RepliedTo,
 			Author: user.Name,
 			Avatar: user.Avatar,
 		})

@@ -27,9 +27,7 @@ func SeekUser(userID int) (*models.User, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return &data, nil
-
 }
 
 func UpdateName(tx *gorm.DB,userID int, name string) error {
